@@ -1,2 +1,2 @@
-# superwinings
+# superwinnings
 ......
