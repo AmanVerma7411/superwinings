@@ -1,6 +1,8 @@
-// controllers/adminController.js
 import User from "../models/User.js";
 import Quiz from "../models/Quiz.js";
+import multer from "multer";
+import csv from "csv-parser";
+import fs from "fs";
 
 // ---------------------- Users ----------------------
 export const getAllUsers = async (req, res) => {
@@ -76,6 +78,27 @@ export const getQuizById = async (req, res) => {
 };
 
 // ---------------------- Questions ----------------------
+export const addQuestionToQuiz = async (req, res) => {
+  try {
+    const { quizId, q, options, correctIndex } = req.body;
+
+    if (!quizId || !q || !Array.isArray(options) || typeof correctIndex !== "number") {
+      return res.status(400).json({ success: false, message: "Invalid payload" });
+    }
+
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
+
+    quiz.questions.push({ q, options, correctIndex });
+    await quiz.save();
+
+    res.json({ success: true, message: "Question added to quiz", quiz });
+  } catch (err) {
+    console.error("addQuestionToQuiz error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const updateQuestion = async (req, res) => {
   try {
     const { quizId, qIndex } = req.params;
@@ -117,23 +140,36 @@ export const deleteQuestion = async (req, res) => {
   }
 };
 
-export const addQuestionToQuiz = async (req, res) => {
+// ---------------------- CSV Upload ----------------------
+export const uploadCSV = async (req, res) => {
   try {
-    const { quizId, q, options, correctIndex } = req.body;
-
-    if (!quizId || !q || !Array.isArray(options) || typeof correctIndex !== "number") {
-      return res.status(400).json({ success: false, message: "Invalid payload" });
-    }
+    const { quizId } = req.body;
+    if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+    if (!quizId) return res.status(400).json({ success: false, message: "Quiz ID is required" });
 
     const quiz = await Quiz.findById(quizId);
     if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
 
-    quiz.questions.push({ q, options, correctIndex });
-    await quiz.save();
+    const results = [];
+    fs.createReadStream(req.file.path)
+      .pipe(csv())
+      .on("data", (row) => results.push(row))
+      .on("end", async () => {
+        const parsedQuestions = results.map(row => ({
+          q: row.q,
+          options: [row.option1, row.option2, row.option3, row.option4],
+          correctIndex: parseInt(row.correctIndex, 10)
+        }));
 
-    res.json({ success: true, message: "Question added to quiz", quiz });
+        quiz.questions.push(...parsedQuestions);
+        await quiz.save();
+        fs.unlinkSync(req.file.path);
+
+        res.json({ success: true, message: "CSV imported successfully", quiz });
+      });
+
   } catch (err) {
-    console.error("addQuestionToQuiz error:", err);
+    console.error("uploadCSV error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

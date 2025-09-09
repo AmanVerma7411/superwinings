@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+//this is updated
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { MoreHorizontal, Plus } from "lucide-react";
@@ -8,6 +9,9 @@ export default function DashboardPage() {
   const [quizzes, setQuizzes] = useState([]);
   const [users, setUsers] = useState([]);
   const [openMenuId, setOpenMenuId] = useState(null);
+
+  const fileInputRef = useRef(null);
+  const [selectedQuizId, setSelectedQuizId] = useState(null); // quiz for CSV upload
   const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
 
   useEffect(() => {
@@ -17,7 +21,9 @@ export default function DashboardPage() {
 
   const fetchQuizzes = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/api/admin/quizzes", { headers });
+      const res = await axios.get("http://localhost:8000/api/admin/quizzes", {
+        headers,
+      });
       if (res.data.success) setQuizzes(res.data.quizzes);
     } catch (err) {
       console.error(err);
@@ -26,7 +32,9 @@ export default function DashboardPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/api/admin/users", { headers });
+      const res = await axios.get("http://localhost:8000/api/admin/users", {
+        headers,
+      });
       if (res.data.success) setUsers(res.data.users);
     } catch (err) {
       console.error(err);
@@ -43,7 +51,10 @@ export default function DashboardPage() {
       setQuizzes((prev) =>
         prev.map((quiz) =>
           quiz._id === quizId
-            ? { ...quiz, questions: quiz.questions.filter((_, i) => i !== qIndex) }
+            ? {
+                ...quiz,
+                questions: quiz.questions.filter((_, i) => i !== qIndex),
+              }
             : quiz
         )
       );
@@ -54,7 +65,49 @@ export default function DashboardPage() {
     }
   };
 
-  const totalQuestions = quizzes.reduce((acc, quiz) => acc + quiz.questions.length, 0);
+  // ---------------- CSV Upload ----------------
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedQuizId) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("quizId", selectedQuizId);
+
+    try {
+      const res = await axios.post(
+        "http://localhost:8000/api/admin/quizzes/upload-csv",
+        formData,
+        {
+          headers: {
+            ...headers,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (res.data.success) {
+        alert("CSV Imported Successfully ✅");
+
+        // Update quizzes state to include new CSV questions
+        setQuizzes((prev) =>
+          prev.map((quiz) =>
+            quiz._id === selectedQuizId ? res.data.quiz : quiz
+          )
+        );
+      } else {
+        alert("Failed to import ❌");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading file ❌");
+    }
+  };
+
+  const totalQuestions = quizzes.reduce(
+    (acc, quiz) => acc + quiz.questions.length,
+    0
+  );
   const totalUsers = users.length;
 
   const recentQuestions = quizzes
@@ -63,7 +116,9 @@ export default function DashboardPage() {
         id: `${quiz._id}-${idx}`,
         quizId: quiz._id?.slice(-4).toUpperCase() || "QZ",
         q: q.q,
-        opts: q.options.map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`).join(", "),
+        opts: q.options
+          .map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`)
+          .join(", "),
         ans: String.fromCharCode(65 + q.correctIndex),
         quizIdFull: quiz._id,
         qIndex: idx,
@@ -73,7 +128,6 @@ export default function DashboardPage() {
 
   return (
     <div className="overflow-x-auto text-white p-6">
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
@@ -82,6 +136,27 @@ export default function DashboardPage() {
             Welcome back! Here’s what’s happening with your quizzes.
           </p>
         </div>
+
+        {/* Import File Button */}
+        <button
+          onClick={() => {
+            if (!quizzes.length) return alert("No quiz available to upload CSV");
+            setSelectedQuizId(quizzes[0]._id); // example: first quiz
+            fileInputRef.current.click();
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white text-black font-medium hover:bg-gray-200 transition"
+        >
+          <Plus size={16} /> Import File
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".json,.csv"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        {/* Add New Quiz Button */}
         <button
           onClick={() => navigate("/admin/add-quiz")}
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-white text-black font-medium hover:bg-gray-200 transition"
