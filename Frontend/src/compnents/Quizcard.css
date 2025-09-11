@@ -1,0 +1,23 @@
+.gradient-border {
+  position: relative;
+  border-radius: 1rem; /* same rounding */
+  padding: 3px;        /* border thickness */
+  background: linear-gradient(to right, pink, yellow, green);
+}
+
+.gradient-border .content {
+  border-radius: 0.75rem; /* thoda chhota so that gradient dikhe */
+  background: #320148;       /* inner background black */
+  color: white;           /* text white */
+  padding: 1.5rem;        /* inner padding */
+  text-align: center;
+}
+.optiondiv{
+     background: #320148; 
+     border:2px solid rgb(13, 101, 195)
+}
+.time{
+   background: #320148;
+   border:2px solid rgb(14, 93, 229);
+}
+

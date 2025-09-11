@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import "./Quizcard.css";
 
 export default function Quizcard({ onBack, quizData = [], loading }) {
-  const [time, setTime] = useState(10);
+  const [time, setTime] = useState(15);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [quizEnd, setQuizEnd] = useState(false);
+  const [score, setScore] = useState(0); // ✅ NEW
 
   const navigate = useNavigate();
 
@@ -28,7 +30,6 @@ export default function Quizcard({ onBack, quizData = [], loading }) {
 
   const currentQ = quizData[questionIndex];
 
-  // ✅ Timer
   useEffect(() => {
     if (time > 0 && !quizEnd) {
       const timer = setTimeout(() => setTime(time - 1), 1000);
@@ -47,19 +48,20 @@ export default function Quizcard({ onBack, quizData = [], loading }) {
     }
   };
 
-  // ✅ Answer handling
   const handleAnswer = (selectedIndex) => {
     if (selectedIndex === currentQ.correctIndex) {
-      handleNext(); // correct → next
+      setScore((prev) => prev + 1); // ✅ increase score if correct
+      handleNext();
     } else {
-      navigate("/plans"); // wrong → redirect to Planpage
+      navigate("/plans");
     }
   };
 
   if (quizEnd) {
     return (
-      <div className="w-full max-w-md mx-auto bg-white text-gray-900 rounded-2xl shadow-lg p-8 text-center">
+      <div className="w-full max-w-md mx-auto text-white rounded-2xl shadow-lg p-8 text-center bg-transparent">
         <h2 className="text-2xl font-bold mb-4">🎉 Quiz Finished!</h2>
+        <p className="mb-2">Correct Answers: {score}</p> {/* ✅ show final score */}
         <p className="mb-6">Thanks for playing. Want to try again?</p>
         <button
           onClick={onBack}
@@ -72,53 +74,54 @@ export default function Quizcard({ onBack, quizData = [], loading }) {
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto bg-gradient-to-r from-pink-700 via-purple-700 to-blue-800 text-white rounded-2xl shadow-lg p-6">
-      {/* Timer */}
-      <div className="relative flex justify-center mb-6">
-        <svg className="w-20 h-20 transform -rotate-90">
-          <circle cx="40" cy="40" r="36" stroke="gray" strokeWidth="6" fill="transparent" />
-          <circle
-            cx="40"
-            cy="40"
-            r="36"
-            stroke="url(#gradient)"
-            strokeWidth="6"
-            fill="transparent"
-            strokeDasharray={2 * Math.PI * 36}
-            strokeDashoffset={(2 * Math.PI * 36 * (10 - time)) / 10}
-            strokeLinecap="round"
-          />
-          <defs>
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#ec4899" />
-              <stop offset="50%" stopColor="#8b5cf6" />
-              <stop offset="100%" stopColor="#3b82f6" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-lg font-bold">
-          {time}
-        </span>
+    <div className="w-full flex justify-center items-start p-5 overflow-x-hidden">
+
+      {/* ✅ Score card in top-right */}
+      <div className="fixed top-30 right-4 bg-transparent text-white font-bold px-4 py-2 rounded-xl shadow-lg">
+        Score:<br></br>Correct Answer {score}
       </div>
 
-      {/* Question */}
-      <div className="bg-black/80 text-white text-center px-4 py-4 rounded-lg mb-6">
-        <p className="text-base sm:text-lg font-medium">
-          {questionIndex + 1}. {currentQ.q}
-        </p>
-      </div>
+      <div className="relative w-full max-w-2xl max-w-full bg-transparent">
+        {/* Question box */}
+        <div className="mb-6 relative">
+          <div className="rounded-2xl border-[3px] border-pink-500 relative p-[1px] bg-transparent">
+            <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-purple-600 
+                            text-white font-bold rounded-full w-10 h-10 flex items-center 
+                            justify-center shadow-lg z-20 time ">
+              {time}
+            </div>
+            <div className="m-2 rounded-2xl gradient-border">
+              <div className="content">
+                <p className="text-lg font-medium leading-relaxed">
+                  {questionIndex + 1}. {currentQ.q}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* Options */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        {currentQ.options?.map((opt, i) => (
+        {/* Options */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {currentQ.options?.map((opt, i) => (
+            <button
+              key={i}
+              className="px-4 py-3 rounded-full text-white font-semibold optiondiv"
+              onClick={() => handleAnswer(i)}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+
+        {/* Next button */}
+        <div className="flex justify-center">
           <button
-            key={i}
-            className="px-4 py-2 rounded-full bg-black/60 hover:bg-purple-600 transition"
-            onClick={() => handleAnswer(i)}
+            onClick={handleNext}
+            className="px-8 py-2 rounded-lg bg-black"
           >
-            {opt}
+            NEXT
           </button>
-        ))}
+        </div>
       </div>
     </div>
   );

@@ -6,11 +6,12 @@ import paytm from "../images/paytm.png";
 import phonepe from "../images/phonepay.png";
 import gpay from "../images/gpay.png";
 import netbanking from "../images/netbanking.png";
+import mtn from "../images/mtn.jpg"
 import logo from "../images/image1.png";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Footer() {
-  const payments = [visa, mastercard, rupay, paytm, phonepe, gpay, netbanking];
+  const payments = [mtn,netbanking];
     const navigate = useNavigate();
 
   return (

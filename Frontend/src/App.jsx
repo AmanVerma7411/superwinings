@@ -20,8 +20,9 @@ import QuizListPage from "./compnents/admin/QuizListPage";
 import LoginModal from "./compnents/LoginModal";
 import { LoginProvider, LoginContext } from "./compnents/LoginContext";
 import { useContext } from "react";
+import Quizcard from "./compnents/Quizcard";
 
-// ✅ Layout for normal pages
+
 function RootLayout({ children, showFeatures = false }) {
   const { showLogin, setShowLogin } = useContext(LoginContext);
 
